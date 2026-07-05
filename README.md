@@ -1,4 +1,4 @@
-# SIGIL — señal / geometría
+# SIGIL — señal / geometría 
 
 Un oráculo visual generativo. Escribes una intención (o haces clic en el vacío
 para una consulta ciega) y la app la convierte en la **semilla determinista**
