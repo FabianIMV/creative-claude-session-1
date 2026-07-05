@@ -1,13 +1,40 @@
-# ORÁCULO — geometría / señal
+# SIGIL — señal / geometría
 
 Un oráculo visual generativo. Escribes una intención (o haces clic en el vacío
 para una consulta ciega) y la app la convierte en la **semilla determinista**
-de un mandala único de geometría sagrada: flor de la vida, cubo de Metatrón,
-espirales áureas, anillos de polígonos y puntos, todo dibujado en canvas con un
-revelado lento y capas que giran en direcciones opuestas. La misma intención
-produce siempre el mismo mandala y la misma sentencia del oráculo.
+de una figura única de geometría sagrada. La misma intención produce siempre
+la misma figura y la misma sentencia del oráculo.
+
+Hay tres **linajes geométricos**, y la semilla elige uno:
+
+- **occidente** — flor de la vida, cubo de Metatrón, espirales áureas,
+  anillos de polígonos y puntos;
+- **yantra** — triángulos entrelazados (↑ fuego / ↓ agua), anillo de pétalos
+  de loto, bindu central y bhupura (el recinto cuadrado con una puerta por
+  lado, que no gira: es el marco del mundo);
+- **mixto** — flor, espirales, loto y triángulos conviviendo.
+
+Y si la intención **invoca una deidad**, la geometría responde con su yantra
+(interpretación libre y respetuosa de las formas tradicionales):
+
+| invocación | triángulos | pétalos | matiz |
+|---|---|---|---|
+| `ganesha` | 1↑ 1↓ | 8 | rojo teja |
+| `shiva` (mahadev) | 5↑ | 16 | ceniza azul |
+| `vishnu` (narayan) | 2↑ 2↓ | 12 | oro |
+| `brahma` | 1↑ 1↓ | 12 | azafrán rojo |
+| `shakti` (sri yantra, devi, durga, kali, lakshmi) | 4↑ 5↓ | 16 | magenta |
+
+Las invocaciones también cambian el sonido: el dron pasa a una escala
+hirajōshi.
 
 **Pruébalo:** escribe una palabra, pulsa CONSULTAR, activa SONIDO y espera.
+
+## El nombre
+
+*Sigil*: un sello, un signo condensado de intención — exactamente lo que la
+app dibuja. Corto, funciona en inglés y en español, y conecta la tradición
+mágica con la gráfica de club nocturno de los 80.
 
 ## Concepto y decisiones creativas
 
@@ -28,9 +55,9 @@ La estética viene de Peter Saville y Factory Records, con dos citas directas:
 Otras decisiones:
 
 - **Determinismo como misticismo.** La intención se hashea (xmur3) y alimenta
-  un PRNG (mulberry32). Todo lo "azaroso" —simetría, capas, giros, paleta,
-  frase del oráculo, raíz del dron— sale de esa semilla. Consultar dos veces
-  lo mismo devuelve lo mismo: el oráculo es consistente, como debe ser.
+  un PRNG (mulberry32). Todo lo "azaroso" —linaje, simetría, capas, giros,
+  paleta, frase del oráculo, raíz del dron— sale de esa semilla. Consultar dos
+  veces lo mismo devuelve lo mismo: el oráculo es consistente, como debe ser.
 - **Sonido 100 % sintetizado** con Web Audio API, sin muestras: un dron de
   tres voces (raíz, octava, quinta desafinada) tras un filtro cuya frecuencia
   la mueve un LFO de 0.02 Hz —una marea—, más "púas" pentatónicas ocasionales

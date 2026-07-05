@@ -77,6 +77,37 @@ function coloresDeTexto(texto) {
 }
 
 /* ------------------------------------------------------------
+   Yantras: si la intención invoca una deidad, la geometría
+   responde con su yantra (interpretación libre y respetuosa:
+   triángulos entrelazados, pétalos de loto, bhupura, bindu).
+   ------------------------------------------------------------ */
+
+const YANTRAS = {
+  //          triángulos ↑ / ↓   pétalos   matiz de acento
+  ganesha: { arriba: 1, abajo: 1, petalos: 8,  matiz: 22 },   // rojo teja
+  shiva:   { arriba: 5, abajo: 0, petalos: 16, matiz: 208 },  // ceniza azul
+  vishnu:  { arriba: 2, abajo: 2, petalos: 12, matiz: 46 },   // oro
+  brahma:  { arriba: 1, abajo: 1, petalos: 12, matiz: 355 },  // azafrán rojo
+  shakti:  { arriba: 4, abajo: 5, petalos: 16, matiz: 328 },  // sri yantra
+};
+
+const ALIAS_YANTRA = [
+  [/ganesh/, 'ganesha'],
+  [/shiva|siva|mahadev/, 'shiva'],
+  [/vishnu|visnu|narayan/, 'vishnu'],
+  [/brahma/, 'brahma'],
+  [/shakti|sri\s?yantra|devi|durga|kali|lakshmi|laksmi/, 'shakti'],
+];
+
+function detectarYantra(texto) {
+  const llano = texto.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  for (const [re, clave] of ALIAS_YANTRA) {
+    if (re.test(llano)) return { clave, ...YANTRAS[clave] };
+  }
+  return null;
+}
+
+/* ------------------------------------------------------------
    La especificación del mandala: todo lo que el azar decide
    una sola vez por consulta.
    ------------------------------------------------------------ */
@@ -90,11 +121,27 @@ function crearEspec(texto) {
 
   const simetria = elegir(rng, [6, 8, 10, 12]);
   const matices = coloresDeTexto(texto);
-  const cromatico = matices.length > 0 && rng() < 0.6;
+  const deidad = detectarYantra(texto);
 
-  // Acentos: matices tomados de las propias letras de la intención.
+  // Linaje geométrico: occidente (flor/Metatrón/espirales),
+  // yantra (triángulos/loto/bhupura) o mixto. Invocar una deidad
+  // fuerza su yantra.
+  let linaje;
+  if (deidad) {
+    linaje = 'yantra';
+  } else {
+    const u = rng();
+    linaje = u < 0.4 ? 'occidente' : u < 0.72 ? 'yantra' : 'mixto';
+  }
+
+  const cromatico = deidad ? true : matices.length > 0 && rng() < 0.6;
+
+  // Acentos: el matiz ritual de la deidad, o matices tomados
+  // de las propias letras de la intención.
   const acentos = [];
-  if (cromatico) {
+  if (deidad) {
+    acentos.push(deidad.matiz, (deidad.matiz + 18) % 360);
+  } else if (cromatico) {
     const n = Math.min(matices.length, 2 + Math.floor(rng() * 2));
     for (let i = 0; i < n; i++) {
       acentos.push(matices[Math.floor(rng() * matices.length)]);
@@ -108,6 +155,11 @@ function crearEspec(texto) {
     matices,
     cromatico,
     acentos,
+    linaje,
+    deidad,
+    triArriba: deidad ? deidad.arriba : 1 + Math.floor(rng() * 3),
+    triAbajo: deidad ? deidad.abajo : Math.floor(rng() * 3),
+    petalos: deidad ? deidad.petalos : elegir(rng, [8, 12, 16]),
     anillosFlor: 2 + Math.floor(rng() * 2),        // flor de la vida: 2–3 anillos
     conMetatron: rng() < 0.55,                      // cubo de Metatrón
     conEspirales: rng() < 0.7,                      // espirales áureas
@@ -119,7 +171,7 @@ function crearEspec(texto) {
     fase: rng() * TAU,
     respuesta: generarRespuesta(rng),
     raizHz: 96 + rng() * 96,                        // raíz del dron sonoro
-    modoEscala: elegir(rng, [0, 1, 2]),
+    modoEscala: deidad ? 2 : elegir(rng, [0, 1, 2]), // deidad → hirajoshi
   };
 }
 
@@ -374,6 +426,116 @@ function dibujarPuntos(radio, cantidad, rev, matiz) {
   }
 }
 
+// Bindu: el punto-semilla en el centro del yantra
+function dibujarBindu(rev, matiz) {
+  if (rev <= 0) return;
+  ctx.fillStyle = trazo(0.9 * rev, matiz);
+  ctx.beginPath();
+  ctx.arc(0, 0, 2.6 * rev, 0, TAU);
+  ctx.fill();
+  ctx.strokeStyle = trazo(0.5 * rev, matiz);
+  ctx.lineWidth = 1;
+  arcoRevelado(8, rev);
+}
+
+// Un triángulo equilátero trazado progresivamente
+function dibujarTri(r, rot, revL) {
+  if (revL <= 0) return;
+  const per = 3 * r * Math.sqrt(3);
+  ctx.setLineDash([per * revL, per]);
+  ctx.beginPath();
+  for (let i = 0; i <= 3; i++) {
+    const a = rot + (i % 3) * (TAU / 3);
+    const x = Math.cos(a) * r;
+    const y = Math.sin(a) * r;
+    if (i === 0) ctx.moveTo(x, y);
+    else ctx.lineTo(x, y);
+  }
+  ctx.stroke();
+  ctx.setLineDash([]);
+}
+
+// Triángulos entrelazados del yantra: ↑ fuego / ↓ agua
+function dibujarYantraTri(radio, arriba, abajo, rev, matiz) {
+  ctx.strokeStyle = trazo(0.5 * rev, matiz);
+  ctx.lineWidth = 1.1;
+  const total = Math.max(1, arriba + abajo);
+  let idx = 0;
+  for (let i = 0; i < arriba; i++, idx++) {
+    const r = radio * (1 - (i / (arriba + 0.6)) * 0.62);
+    dibujarTri(r, -Math.PI / 2, suavizar(rev * total * 0.9 - idx * 0.45));
+  }
+  for (let i = 0; i < abajo; i++, idx++) {
+    const r = radio * (0.92 - (i / (abajo + 0.6)) * 0.58);
+    dibujarTri(r, Math.PI / 2, suavizar(rev * total * 0.9 - idx * 0.45));
+  }
+}
+
+// Anillo de pétalos de loto
+function dibujarLoto(r0, r1, petalos, rev, matiz) {
+  ctx.strokeStyle = trazo(0.45 * rev, matiz);
+  ctx.lineWidth = 1;
+  for (let i = 0; i < petalos; i++) {
+    const revP = suavizar(rev * petalos * 0.5 - i * 0.35);
+    if (revP <= 0) continue;
+    const a = (i / petalos) * TAU - Math.PI / 2;
+    const da = TAU / petalos / 2;
+    const tip = r0 + (r1 - r0) * revP;
+    const medio = r0 + (tip - r0) * 0.62;
+    ctx.beginPath();
+    ctx.moveTo(Math.cos(a - da * 0.9) * r0, Math.sin(a - da * 0.9) * r0);
+    ctx.quadraticCurveTo(
+      Math.cos(a - da) * medio, Math.sin(a - da) * medio,
+      Math.cos(a) * tip, Math.sin(a) * tip
+    );
+    ctx.quadraticCurveTo(
+      Math.cos(a + da) * medio, Math.sin(a + da) * medio,
+      Math.cos(a + da * 0.9) * r0, Math.sin(a + da * 0.9) * r0
+    );
+    ctx.stroke();
+  }
+}
+
+// Bhupura: el recinto cuadrado del yantra, con una puerta por lado
+function dibujarBhupura(mitad, rev, matiz) {
+  if (rev <= 0) return;
+  const g = mitad * 0.2;    // media anchura de la puerta
+  const p = mitad * 0.1;    // saliente de la puerta
+  ctx.lineWidth = 1.2;
+  for (let k = 0; k < 4; k++) {
+    const revL = suavizar(rev * 1.9 - k * 0.28);
+    if (revL <= 0) continue;
+    ctx.save();
+    ctx.rotate(k * (Math.PI / 2));
+    const pts = [
+      [-mitad, -mitad], [-g, -mitad], [-g, -mitad - p],
+      [-g * 0.45, -mitad - p], [-g * 0.45, -mitad - p * 1.9],
+      [g * 0.45, -mitad - p * 1.9], [g * 0.45, -mitad - p],
+      [g, -mitad - p], [g, -mitad], [mitad, -mitad],
+    ];
+    let per = 0;
+    for (let i = 1; i < pts.length; i++) {
+      per += Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]);
+    }
+    ctx.setLineDash([per * revL, per]);
+    ctx.strokeStyle = trazo(0.5 * rev, matiz);
+    ctx.beginPath();
+    pts.forEach(([x, y], i) => (i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)));
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.restore();
+  }
+  // marco interior sencillo
+  const m2 = mitad * 0.94;
+  const per2 = 8 * m2;
+  ctx.setLineDash([per2 * rev, per2]);
+  ctx.strokeStyle = trazo(0.28 * rev, matiz);
+  ctx.beginPath();
+  ctx.rect(-m2, -m2, m2 * 2, m2 * 2);
+  ctx.stroke();
+  ctx.setLineDash([]);
+}
+
 // Anillo exterior: la intención codificada en color, letra a letra
 // (el "alfabeto" de Power, Corruption & Lies)
 function dibujarAnilloCodigo(radio, matices, rev, cromatico) {
@@ -402,11 +564,14 @@ function dibujarMandala(t, energia) {
 
   const cx = W / 2;
   const cy = H * 0.44;
-  const radio = Math.min(W, H) * 0.30;
+  const esYantra = espec.linaje === 'yantra';
+  // el bhupura necesita aire: sus esquinas sobresalen del círculo
+  const radio = Math.min(W, H) * 0.30 * (esYantra ? 0.78 : 1);
 
   // latido: respira despacio, y un poco más si hay sonido
   const latido = 1 + Math.sin(t * 0.0006 * veloc) * 0.012 + energia * 0.03;
-  const gir = espec.fase + t * 0.00003 * espec.girBase * 60 * veloc;
+  // giro meditativo: una vuelta completa cada 2–5 minutos
+  const gir = espec.fase + t * 0.0001 * espec.girBase * veloc;
 
   const ac = espec.acentos; // matices de acento (o vacío en modo mono)
   const acento = (i) => (ac.length ? ac[i % ac.length] : null);
@@ -424,20 +589,25 @@ function dibujarMandala(t, energia) {
   ctx.arc(0, 0, radio * 1.35, 0, TAU);
   ctx.fill();
 
-  // capas, cada una con su giro propio (direcciones alternas)
-  ctx.save();
-  ctx.rotate(gir);
-  dibujarFlor(radio * 0.62, espec.anillosFlor, suavizar(rev * 1.3), null);
-  ctx.restore();
+  // capas según linaje, cada una con su giro propio
+  if (espec.linaje !== 'yantra') {
+    ctx.save();
+    ctx.rotate(gir);
+    dibujarFlor(
+      radio * (espec.linaje === 'mixto' ? 0.5 : 0.62),
+      espec.anillosFlor, suavizar(rev * 1.3), null
+    );
+    ctx.restore();
+  }
 
-  if (espec.conMetatron) {
+  if (espec.linaje === 'occidente' && espec.conMetatron) {
     ctx.save();
     ctx.rotate(-gir * 0.6);
     dibujarMetatron(radio * 0.88, suavizar(rev * 1.15 - 0.1), acento(0));
     ctx.restore();
   }
 
-  if (espec.conEspirales) {
+  if (espec.linaje !== 'yantra' && espec.conEspirales) {
     ctx.save();
     ctx.rotate(gir * 0.4);
     dibujarEspirales(
@@ -447,22 +617,51 @@ function dibujarMandala(t, energia) {
     ctx.restore();
   }
 
-  ctx.save();
-  ctx.rotate(-gir * 0.25);
-  dibujarPoligonos(
-    radio * 0.8, espec.ladosPoligono, espec.poligonos,
-    suavizar(rev * 1.1 - 0.2), acento(2)
-  );
-  ctx.restore();
-
-  for (let i = 0; i < espec.anillosPuntos; i++) {
+  if (espec.linaje === 'occidente') {
     ctx.save();
-    ctx.rotate(gir * (i % 2 ? 0.5 : -0.35));
-    dibujarPuntos(
-      radio * (1.0 + i * 0.06), espec.simetria * (3 + i * 2),
-      suavizar(rev * 1.1 - 0.25 - i * 0.1), null
+    ctx.rotate(-gir * 0.25);
+    dibujarPoligonos(
+      radio * 0.8, espec.ladosPoligono, espec.poligonos,
+      suavizar(rev * 1.1 - 0.2), acento(2)
     );
     ctx.restore();
+
+    for (let i = 0; i < espec.anillosPuntos; i++) {
+      ctx.save();
+      ctx.rotate(gir * (i % 2 ? 0.5 : -0.35));
+      dibujarPuntos(
+        radio * (1.0 + i * 0.06), espec.simetria * (3 + i * 2),
+        suavizar(rev * 1.1 - 0.25 - i * 0.1), null
+      );
+      ctx.restore();
+    }
+  }
+
+  if (espec.linaje !== 'occidente') {
+    // las capas del yantra ignoran la fase aleatoria:
+    // los triángulos deben nacer rectos (↑ fuego / ↓ agua)
+    const girY = gir - espec.fase;
+
+    // el recinto no gira: es la tierra, el marco del mundo
+    if (esYantra) {
+      dibujarBhupura(radio * 1.3, suavizar(rev * 1.2 - 0.05), acento(0));
+    }
+
+    ctx.save();
+    ctx.rotate(girY * 0.12);
+    dibujarLoto(
+      radio * (esYantra ? 0.78 : 0.85), radio * (esYantra ? 0.98 : 1.02),
+      espec.petalos, suavizar(rev * 1.15 - 0.15), acento(1)
+    );
+    ctx.restore();
+
+    // los triángulos no giran jamás: ↑ fuego / ↓ agua, siempre rectos
+    dibujarYantraTri(
+      radio * 0.72, espec.triArriba, espec.triAbajo,
+      suavizar(rev * 1.1 - 0.25), acento(0)
+    );
+
+    dibujarBindu(suavizar(rev * 1.4 - 0.5), acento(0));
   }
 
   // el anillo del código no gira: es la palabra, fija
@@ -692,9 +891,9 @@ btnSonido.addEventListener('click', alternarSonido);
 
 btnGuardar.addEventListener('click', () => {
   const enlace = document.createElement('a');
-  const slug = (espec ? espec.texto : 'oraculo')
-    .toLowerCase().replace(/[^a-z0-9áéíóúñü]+/gi, '-').slice(0, 40) || 'oraculo';
-  enlace.download = `oraculo-${slug}.png`;
+  const slug = (espec ? espec.texto : 'sigil')
+    .toLowerCase().replace(/[^a-z0-9áéíóúñü]+/gi, '-').slice(0, 40) || 'sigil';
+  enlace.download = `sigil-${slug}.png`;
   enlace.href = lienzo.toDataURL('image/png');
   enlace.click();
 });
