@@ -1,0 +1,159 @@
+/* ORÁCULO — geometría / señal
+   Estética: Peter Saville / Factory Records.
+   Clínico, tipográfico, casi todo negro. */
+
+:root {
+  --tinta: #e8e8e6;
+  --tinta-tenue: rgba(232, 232, 230, 0.45);
+  --fondo: #0a0a0f;
+  --linea: rgba(232, 232, 230, 0.22);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html, body {
+  height: 100%;
+  overflow: hidden;
+  background: var(--fondo);
+  color: var(--tinta);
+  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+#lienzo {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  cursor: crosshair;
+}
+
+/* ---- cabecera ---- */
+
+.marca {
+  position: fixed;
+  top: max(1.4rem, env(safe-area-inset-top));
+  left: 1.6rem;
+  pointer-events: none;
+  user-select: none;
+}
+
+.marca h1 {
+  font-size: 0.95rem;
+  font-weight: 500;
+  letter-spacing: 0.55em;
+}
+
+.marca .sub {
+  margin-top: 0.35rem;
+  font-size: 0.62rem;
+  font-weight: 400;
+  letter-spacing: 0.3em;
+  color: var(--tinta-tenue);
+}
+
+/* ---- botones superiores ---- */
+
+.controles-sup {
+  position: fixed;
+  top: max(1.4rem, env(safe-area-inset-top));
+  right: 1.6rem;
+  display: flex;
+  gap: 0.6rem;
+}
+
+/* ---- consola inferior ---- */
+
+.consola {
+  position: fixed;
+  left: 50%;
+  bottom: max(1.6rem, env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  width: min(30rem, calc(100vw - 2.4rem));
+  text-align: center;
+}
+
+.respuesta {
+  min-height: 2.4em;
+  margin-bottom: 0.9rem;
+  font-family: "Courier New", Courier, monospace;
+  font-size: 0.78rem;
+  letter-spacing: 0.14em;
+  line-height: 1.6;
+  color: var(--tinta);
+  opacity: 0;
+  transition: opacity 2.4s ease;
+}
+
+.respuesta.visible { opacity: 0.9; }
+
+#forma {
+  display: flex;
+  gap: 0.5rem;
+}
+
+#intencion {
+  flex: 1;
+  min-width: 0;
+  padding: 0.7rem 0.9rem;
+  background: rgba(10, 10, 15, 0.55);
+  border: 1px solid var(--linea);
+  border-radius: 0;
+  color: var(--tinta);
+  font-family: "Courier New", Courier, monospace;
+  font-size: 16px; /* evita el zoom automático en iOS */
+  letter-spacing: 0.08em;
+  outline: none;
+  transition: border-color 0.4s ease;
+}
+
+#intencion::placeholder { color: var(--tinta-tenue); }
+#intencion:focus { border-color: var(--tinta); }
+
+button {
+  padding: 0.7rem 1rem;
+  background: transparent;
+  border: 1px solid var(--linea);
+  border-radius: 0;
+  color: var(--tinta);
+  font-family: inherit;
+  font-size: 0.62rem;
+  font-weight: 500;
+  letter-spacing: 0.25em;
+  cursor: pointer;
+  transition: border-color 0.3s ease, background 0.3s ease;
+}
+
+button:hover, button:focus-visible {
+  border-color: var(--tinta);
+  background: rgba(232, 232, 230, 0.06);
+  outline: none;
+}
+
+#btn-sonido[aria-pressed="true"] {
+  border-color: var(--tinta);
+  background: rgba(232, 232, 230, 0.1);
+}
+
+.pista {
+  margin-top: 0.8rem;
+  font-size: 0.58rem;
+  letter-spacing: 0.22em;
+  color: var(--tinta-tenue);
+  user-select: none;
+}
+
+/* ---- móvil ---- */
+
+@media (max-width: 540px) {
+  .marca { left: 1.1rem; }
+  .controles-sup { right: 1.1rem; }
+  .controles-sup button { padding: 0.55rem 0.7rem; }
+  #forma button { padding: 0.7rem 0.8rem; }
+  .pista { display: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .respuesta { transition-duration: 0.6s; }
+}
